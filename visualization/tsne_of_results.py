@@ -16,9 +16,10 @@ word = 'communist'
 
 
 wordlist = []
-fid = open('data/wordlist.txt','r')
+fid = open('data/wordIDHash.csv','r')
 for line in fid:
-    wordlist.append(line.strip())
+    word_id, word = line.strip().split(',')
+    wordlist.append(line.strip(word))
 fid.close()
 nw = len(wordlist)
     
@@ -29,7 +30,7 @@ for k in xrange(len(wordlist)):
 
 times = range(180,200) # total number of time points (20/range(27) for ngram/nyt)
 
-emb_all = sio.loadmat('results/embeddings.mat')
+emb_all = sio.loadmat('results/embs.mat')
 
 #%%
 
