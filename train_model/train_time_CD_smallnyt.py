@@ -66,7 +66,7 @@ if __name__=='__main__':
     Ulist,Vlist = util.import_static_init(T)
     print Ulist
     print Vlist
-    asdf
+
     print('getting batch indices')
     if b < nw:
         b_ind = util.getbatches(nw,b)
