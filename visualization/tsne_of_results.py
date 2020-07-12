@@ -18,8 +18,8 @@ word = 'communist'
 wordlist = []
 fid = open('data/wordIDHash.csv','r')
 for line in fid:
-    word_id, word = line.strip().split(',')
-    wordlist.append(line.strip(word))
+    word_id, _word = line.strip().split(',')
+    wordlist.append(_word)
 fid.close()
 nw = len(wordlist)
     

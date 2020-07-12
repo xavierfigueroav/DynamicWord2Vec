@@ -3,7 +3,7 @@ import sys
 
 from scipy.io import savemat
 
-result = 'result/L10T50G100A1ngU_iter4.p'
+result = 'results/L10T50G100A1ngU_iter4.p'
 output = 'results/embs.mat'
 
 with open(result, 'rb') as pfile:
