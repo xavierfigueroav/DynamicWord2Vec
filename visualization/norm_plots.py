@@ -26,9 +26,9 @@ fid.close()
 nw = len(wordlist)
     
 word2Id = {}
-for k in xrange(len(wordlist)):
+for k in range(len(wordlist)):
     word2Id[wordlist[k]] = k
-times = range(180,200) # total number of time points (20/range(27) for ngram/nyt)
+times = list(range(180,200)) # total number of time points (20/range(27) for ngram/nyt)
 emb_all = sio.loadmat('results/emb_frobreg10_diffreg50_symmreg10_iter10.mat')
 
 #%%
@@ -51,7 +51,7 @@ import pickle
 years = [t*10 for t in times]
 markers = ['+','o','x','*']
 plt.clf()
-for k in xrange(len(allnorms)):
+for k in range(len(allnorms)):
     norms = allnorms[k]
     plt.plot(years,norms,marker=markers[k],markersize=7)
 plt.legend(words)

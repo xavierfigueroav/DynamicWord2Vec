@@ -16,7 +16,7 @@ import pickle as pickle
 # PARAMETERS
 
 nw = 20936 # number of words in vocab (11068100/20936 for ngram/nyt)
-T = range(1990,2016) # total number of time points (20/range(27) for ngram/nyt)
+T = list(range(1990, 2016)) # total number of time points (20/range(27) for ngram/nyt)
 cuda = True
 
 trainhead = 'data/wordPairPMI_' # location of training data
@@ -64,24 +64,24 @@ if __name__=='__main__':
     
     #Ulist,Vlist = util.initvars(nw,T,r, trainhead)
     Ulist,Vlist = util.import_static_init(T)
-    print Ulist
-    print Vlist
+    print(Ulist)
+    print(Vlist)
 
     print('getting batch indices')
     if b < nw:
         b_ind = util.getbatches(nw,b)
     else:
-        b_ind = [range(nw)]
+        b_ind = [list(range(nw))]
     
     import time
     start_time = time.time()
     # sequential updates
-    for iteration in xrange(ITERS):  
+    for iteration in range(ITERS):  
         print_params(r,lam,tau,gam,emph,ITERS)
         try:
             Ulist = pickle.load(open( "%sngU_iter%d.p" % (savefile,iteration), "rb" ) )
             Vlist = pickle.load(open( "%sngV_iter%d.p" % (savefile, iteration), "rb" ) )
-            print 'iteration %d loaded succesfully' % iteration
+            print('iteration %d loaded succesfully' % iteration)
             continue
         except(IOError):
             pass
@@ -90,10 +90,10 @@ if __name__=='__main__':
         if iteration == 0: times = T
         else: times = np.random.permutation(T)
         
-        for t in xrange(len(times)):   # select a time
-            print 'iteration %d, time %d' % (iteration, t)
+        for t in range(len(times)):   # select a time
+            print('iteration %d, time %d' % (iteration, t))
             f = trainhead + str(t) + '.csv'
-            print f
+            print(f)
             
             """
             try:
@@ -107,8 +107,8 @@ if __name__=='__main__':
             """
             
             pmi = util.getmat(f,nw,False)
-            for j in xrange(len(b_ind)): # select a mini batch
-                print '%d out of %d' % (j,len(b_ind))
+            for j in range(len(b_ind)): # select a mini batch
+                print('%d out of %d' % (j,len(b_ind)))
                 ind = b_ind[j]
                 ## UPDATE V
                 # get data
@@ -143,7 +143,7 @@ if __name__=='__main__':
             ####  INNER BATCH LOOP END
                 
         # save
-        print 'time elapsed = ', time.time()-start_time
+        print('time elapsed = ', time.time()-start_time)
        
 
         pickle.dump(Ulist, open( "%sngU_iter%d.p" % (savefile,iteration), "wb" ) , pickle.HIGHEST_PROTOCOL)
