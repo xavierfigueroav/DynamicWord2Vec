@@ -3,7 +3,9 @@ include
 lib
 local
 
-data/*
-results/*
+data
+results
+tsne_output
+**/__pycache__
 
 .vscode

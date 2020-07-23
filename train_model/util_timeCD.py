@@ -24,7 +24,7 @@ def update(U,Y,Vm1,Vp1,lam,tau,gam,ind,iflag):
     Uty = np.dot(U.T,Y) # rxb
     Ub  = U[ind,:].T   # rxb
     A   = Uty + gam*Ub + tau*(Vm1.T+Vp1.T)  # rxb
-    Vhat = np.linalg.lstsq(M,A) #rxb
+    Vhat = np.linalg.lstsq(M,A,rcond=-1) #rxb
     return Vhat[0].T #bxr
 
 
@@ -45,17 +45,17 @@ def initvars(vocab_size,T,rank):
     U,V = [],[]
     U.append(np.random.randn(vocab_size,rank)/np.sqrt(rank))
     V.append(np.random.randn(vocab_size,rank)/np.sqrt(rank))
-    for t in xrange(1,T):
+    for t in range(1,T):
         U.append(U[0].copy())
         V.append(V[0].copy())
-        print t
+        print(t)
     return U,V
     
 import pandas as pd
 import scipy.sparse as ss
 def getmat(f,v,rowflag):
     data = pd.read_csv(f)
-    data = data.as_matrix()
+    data = data.values
     
     X = ss.coo_matrix((data[:,2],(data[:,0],data[:,1])),shape=(v,v))
    
@@ -73,7 +73,7 @@ def getbatches(vocab,b):
     batchinds = []
     current = 0
     while current<vocab:
-        inds = range(current,min(current+b,vocab))
+        inds = list(range(current,min(current+b,vocab)))
         current = min(current+b,vocab)
         batchinds.append(inds)
     return batchinds

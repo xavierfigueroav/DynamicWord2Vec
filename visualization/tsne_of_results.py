@@ -24,11 +24,11 @@ fid.close()
 nw = len(wordlist)
     
 word2Id = {}
-for k in xrange(len(wordlist)):
+for k in range(len(wordlist)):
     word2Id[wordlist[k]] = k
 
 
-times = range(180,200) # total number of time points (20/range(27) for ngram/nyt)
+times = list(range(180,200)) # total number of time points (20/range(27) for ngram/nyt)
 
 emb_all = sio.loadmat('results/embs.mat')
 
@@ -48,7 +48,7 @@ for year in times:
     emb = emb_all['U_%d' % times.index(year)]
     embnrm = np.reshape(np.sqrt(np.sum(emb**2,1)),(emb.shape[0],1))
     emb_normalized = np.divide(emb, np.tile(embnrm, (1,emb.shape[1])))           
-    print emb_normalized.shape
+    print(emb_normalized.shape)
     v = emb_normalized[word2Id[word],:]
 
 
@@ -58,16 +58,16 @@ for year in times:
     
     idx = np.argsort(d)[::-1]
     newwords = [(wordlist[k], year) for k in list(idx[:nn])]
-    print newwords
+    print(newwords)
     list_of_words.extend(newwords)
-    for k in xrange(nn):
+    for k in range(nn):
         isword.append(k==0)
     X.append(emb[idx[:nn],:])
     #print year, [wordlist[i] for i in idx[:nn]]
     
 X = np.vstack(X)
 
-print X.shape
+print(X.shape)
 
 #%%
 
@@ -87,7 +87,7 @@ import pickle
 
 plt.clf()
 traj = []
-for k in xrange(len(list_of_words)):
+for k in range(len(list_of_words)):
     
     if isword[k] :
         marker = 'ro'
@@ -120,7 +120,7 @@ traj = []
 Zp = Z*1.
 Zp[:,0] = Zp[:,0]*2.
 all_dist = np.zeros((Z.shape[0],Z.shape[0]))
-for k in xrange(Z.shape[0]):
+for k in range(Z.shape[0]):
     all_dist[:,k] =np.sum( (Zp - np.tile(Zp[k,:],(Z.shape[0],1)))**2.,axis=1)
 
 dist_to_centerpoints = all_dist[:,isword]
@@ -131,7 +131,7 @@ idx_dist_to_other = np.argsort(dist_to_other,axis=1)
 dist_to_other = np.sort(dist_to_other,axis=1)
 
 plt.clf()
-for k in xrange(len(list_of_words)-1,-1,-1):
+for k in range(len(list_of_words)-1,-1,-1):
     
     if isword[k] :
         #if list_of_words[k][1] % 3 != 0 and list_of_words[k][1] < 199 : continue
@@ -141,7 +141,7 @@ for k in xrange(len(list_of_words)-1,-1,-1):
     else: 
         if dist_to_centerpoints[k] > 200: continue
         skip =False
-        for i in xrange(Z.shape[0]):
+        for i in range(Z.shape[0]):
             if dist_to_other[k,i] < 150 and idx_dist_to_other[k,i] > k: 
                 skip = True
                 break
