@@ -34,8 +34,8 @@ def update(U,Y,Vm1,Vp1,lam,tau,gam,ind,iflag):
 #U is n X r
 #Vm1 and Vp1 are bXr. so they are b rows of V, transposed
 
-def import_static_init(T):
-    emb = sio.loadmat('data/emb_static.mat')['emb']
+def import_static_init(T, data):
+    emb = sio.loadmat(data)['emb']
     U = [copy.deepcopy(emb) for t in T]
     V = [copy.deepcopy(emb) for t in T]
     return U,V

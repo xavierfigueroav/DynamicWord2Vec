@@ -9,19 +9,13 @@ Created on Thu Nov 10 13:10:42 2016
 # trainfile has lines of the form
 # tok1,tok2,pmi
 
+import glob
+import os
+import sys
 import numpy as np
-import util_timeCD as util
 import pickle as pickle
 
-# PARAMETERS
 
-nw = 20936 # number of words in vocab (11068100/20936 for ngram/nyt)
-T = list(range(1990, 2016)) # total number of time points (20/range(27) for ngram/nyt)
-cuda = True
-
-trainhead = 'data/wordPairPMI_' # location of training data
-savehead = 'results/'
-    
 def print_params(r,lam,tau,gam,emph,ITERS):
     
     print('rank = {}'.format(r))
@@ -31,8 +25,15 @@ def print_params(r,lam,tau,gam,emph,ITERS):
     print('emphasize param   = {}'.format(emph))
     print('total iterations = {}'.format(ITERS))
     
-if __name__=='__main__':
-    import sys
+if __name__ == '__main__':
+    import util_timeCD as util
+
+    nw = 20936 # number of words in vocab (11068100/20936 for ngram/nyt)
+    T = list(range(1990, 2016)) # total number of time points (20/range(27) for ngram/nyt)
+
+    trainhead = 'data/wordPairPMI_' # location of training data
+    savehead = 'results/'
+
     ITERS = 5 # total passes over the data
     lam = 10 #frob regularizer
     gam = 100 # forcing regularizer
@@ -51,9 +52,34 @@ if __name__=='__main__':
         if foo[i]=='-b':    b = int(float(foo[i+1]))
         if foo[i]=='-emph': emph = float(foo[i+1])
         if foo[i]=='-check': erchk=foo[i+1]
-    
-        
-    savefile = savehead+'L'+str(lam)+'T'+str(tau)+'G'+str(gam)+'A'+str(emph)
+
+def get_vocabulary_size(vocabulary_directory):
+    with open(vocabulary_directory, 'r') as voc_file:
+        return len(voc_file.readlines())
+
+def get_points(directory_path):
+    files_path = glob.glob(os.path.join(directory_path, 'wordPairPMI_*.csv'))
+    get_frame_number = lambda path: int(path.split('_')[-1].split('.')[0])
+    frames = list(map(get_frame_number, files_path))
+    return list(range(min(frames), max(frames) + 1))
+
+def run_dw2v(exper_dir, iters, lam, tau, gam, emph, r):
+
+    import train_model.util_timeCD as util
+
+    data_dir = os.path.join(exper_dir, 'embs')
+    trainhead = os.path.join(data_dir, 'wordPairPMI_')
+    voc_path = os.path.join(data_dir, 'wordIDHash.csv')
+    embmat = os.path.join(data_dir, 'emb_static.mat')
+    b = nw = get_vocabulary_size(voc_path)
+    ITERS = iters
+    T = get_points(data_dir)
+    savehead = os.path.join(exper_dir, 'results')
+    savefile = 'L{}T{}G{}A{}'.format(lam, tau, gam, emph)
+    savefile = os.path.join(savehead, savefile)
+
+    print(f"b = {b}, nw = {nw}, T = {T}")
+    print(iters, lam, tau, gam, emph, r)
     
     print('starting training with following parameters')
     print_params(r,lam,tau,gam,emph,ITERS)
@@ -63,7 +89,7 @@ if __name__=='__main__':
     print('initializing')
     
     #Ulist,Vlist = util.initvars(nw,T,r, trainhead)
-    Ulist,Vlist = util.import_static_init(T)
+    Ulist,Vlist = util.import_static_init(T, embmat)
     print(Ulist)
     print(Vlist)
 
