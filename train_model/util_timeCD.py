@@ -54,7 +54,7 @@ def initvars(vocab_size,T,rank):
 import pandas as pd
 import scipy.sparse as ss
 def getmat(f,v,rowflag):
-    data = pd.read_csv(f)
+    data = pd.read_csv(f, compression='gzip')
     data = data.values
     
     X = ss.coo_matrix((data[:,2],(data[:,0],data[:,1])),shape=(v,v))
