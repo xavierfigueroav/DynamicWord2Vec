@@ -65,7 +65,7 @@ def get_points(directory_path):
 
 def run_dw2v(exper_dir, iters, lam, tau, gam, emph, r):
 
-    import train_model.util_timeCD as util
+    import DynamicWord2Vec.train_model.util_timeCD as util
 
     data_dir = os.path.join(exper_dir, 'embs')
     trainhead = os.path.join(data_dir, 'wordPairPMI_')

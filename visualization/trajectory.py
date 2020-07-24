@@ -2,8 +2,8 @@ import glob
 import os
 import sys
 
-from transform_for_viz import transform
-from tsne_of_results import plot_trajectories
+from DynamicWord2Vec.visualization.transform_for_viz import transform
+from DynamicWord2Vec.visualization.tsne_of_results import plot_trajectories
 
 
 def get_last_iter_file(files):
@@ -16,14 +16,18 @@ def get_last_iter_file(files):
             last_iter_file = file_path
     return last_iter_file
 
-exper_dir = sys.argv[1]
-result_dir = os.path.join(exper_dir, 'results')
-output_file = os.path.join(result_dir, 'embs_for_viz.mat')
+def run_trajectories(exper_dir, word):
+    result_dir = os.path.join(exper_dir, 'results')
+    output_file = os.path.join(result_dir, 'embs_for_viz.mat')
 
-if not os.path.isfile(output_file):
-    result_files = glob.glob(os.path.join(result_dir, '*U*.p'))
-    # needed due to method 'sorted' does not work as you may expect
-    result_file = get_last_iter_file(result_files)
-    transform(result_file, output_file)
+    if not os.path.isfile(output_file):
+        result_files = glob.glob(os.path.join(result_dir, '*U*.p'))
+        # needed due to method 'sorted' does not work as you may expect
+        result_file = get_last_iter_file(result_files)
+        transform(result_file, output_file)
 
-plot_trajectories(exper_dir, output_file, sys.argv[2])
+    plot_trajectories(exper_dir, output_file, word)
+
+
+if __name__ == '__main__':
+    run_trajectories(sys.argv[1], sys.argv[2])
