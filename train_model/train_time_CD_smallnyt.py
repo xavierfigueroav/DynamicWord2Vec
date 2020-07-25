@@ -118,7 +118,7 @@ def run_dw2v(exper_dir, iters, lam, tau, gam, emph, r):
         
         for t in range(len(times)):   # select a time
             print('iteration %d, time %d' % (iteration, t))
-            f = trainhead + str(t) + '.csv'
+            f = trainhead + str(t + T[0]) + '.csv'
             print(f)
             
             """
