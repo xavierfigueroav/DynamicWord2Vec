@@ -16,7 +16,7 @@ def get_points(directory_path):
     files_path = glob.glob(os.path.join(directory_path, 'wordPairPMI_*.csv'))
     get_frame_number = lambda path: int(path.split('_')[-1].split('.')[0])
     frames = list(map(get_frame_number, files_path))
-    return list(range(min(frames), max(frames) + 1))
+    return sorted(frames)
 
 def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
     embs_dir = os.path.join(exper_dir, 'embs')
@@ -37,14 +37,14 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
 
     emb_all = sio.loadmat(embeddings)
 
-    emb = emb_all['U_%d' % (len(times) - 1)]
+    emb = emb_all[f'U_{times[-1]}']
     nn = emb.shape[1]
                 
     X = []
     list_of_words = []
     isword = []
     for year in times:
-        emb = emb_all['U_%d' % times.index(year)]
+        emb = emb_all[f'U_{year}']
         embnrm = np.reshape(np.sqrt(np.sum(emb**2,1)),(emb.shape[0],1))
         emb_normalized = np.divide(emb, np.tile(embnrm, (1,emb.shape[1])))           
         print(emb_normalized.shape)

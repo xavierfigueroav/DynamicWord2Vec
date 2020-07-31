@@ -61,7 +61,7 @@ def get_points(directory_path):
     files_path = glob.glob(os.path.join(directory_path, 'wordPairPMI_*.csv'))
     get_frame_number = lambda path: int(path.split('_')[-1].split('.')[0])
     frames = list(map(get_frame_number, files_path))
-    return list(range(min(frames), max(frames) + 1))
+    return sorted(frames)
 
 def run_dw2v(exper_dir, iters, lam, tau, gam, emph, r):
 
@@ -118,7 +118,7 @@ def run_dw2v(exper_dir, iters, lam, tau, gam, emph, r):
         
         for t in range(len(times)):   # select a time
             print('iteration %d, time %d' % (iteration, t))
-            f = trainhead + str(t + T[0]) + '.csv'
+            f = trainhead + str(T[t]) + '.csv'
             print(f)
             
             """

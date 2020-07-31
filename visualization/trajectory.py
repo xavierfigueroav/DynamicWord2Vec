@@ -17,6 +17,7 @@ def get_last_iter_file(files):
     return last_iter_file
 
 def run_trajectories(exper_dir, word, word_step, font_size):
+    embs_dir = os.path.join(exper_dir, 'embs')
     result_dir = os.path.join(exper_dir, 'results')
     output_file = os.path.join(result_dir, 'embs_for_viz.mat')
 
@@ -24,7 +25,7 @@ def run_trajectories(exper_dir, word, word_step, font_size):
         result_files = glob.glob(os.path.join(result_dir, '*U*.p'))
         # needed due to method 'sorted' does not work as you may expect
         result_file = get_last_iter_file(result_files)
-        transform(result_file, output_file)
+        transform(result_file, output_file, embs_dir)
 
     plot_trajectories(exper_dir, output_file, word, word_step, font_size)
 
