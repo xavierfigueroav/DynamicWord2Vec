@@ -18,7 +18,7 @@ def get_points(directory_path):
     frames = list(map(get_frame_number, files_path))
     return list(range(min(frames), max(frames) + 1))
 
-def plot_trajectories(exper_dir, embeddings, word):
+def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
     embs_dir = os.path.join(exper_dir, 'embs')
     tsne_output = os.path.join(exper_dir, 'visualization')
     vocabulary = os.path.join(embs_dir, 'wordIDHash.csv')
@@ -28,35 +28,27 @@ def plot_trajectories(exper_dir, embeddings, word):
         word_id, _word = line.strip().split(',')
         wordlist.append(_word)
     fid.close()
-    nw = len(wordlist)
 
     word2Id = {}
     for k in range(len(wordlist)):
         word2Id[wordlist[k]] = k
 
-
     times = get_points(embs_dir) # total number of time points (20/range(27) for ngram/nyt)
 
     emb_all = sio.loadmat(embeddings)
 
-    nn = 50
     emb = emb_all['U_%d' % (len(times) - 1)]
+    nn = emb.shape[1]
                 
     X = []
     list_of_words = []
     isword = []
-    v = emb[word2Id[word],:]
     for year in times:
-
-
         emb = emb_all['U_%d' % times.index(year)]
         embnrm = np.reshape(np.sqrt(np.sum(emb**2,1)),(emb.shape[0],1))
         emb_normalized = np.divide(emb, np.tile(embnrm, (1,emb.shape[1])))           
         print(emb_normalized.shape)
         v = emb_normalized[word2Id[word],:]
-
-
-
 
         d =np.dot(emb_normalized,v)
         
@@ -67,41 +59,50 @@ def plot_trajectories(exper_dir, embeddings, word):
         for k in range(nn):
             isword.append(k==0)
         X.append(emb[idx[:nn],:])
-        #print year, [wordlist[i] for i in idx[:nn]]
         
     X = np.vstack(X)
 
     print(X.shape)
 
-
-
     from sklearn.manifold import TSNE
-    model = TSNE(n_components=2, metric = 'euclidean')
+    model = TSNE(n_components=2, metric='euclidean', random_state=1)
     Z = model.fit_transform(X)
-
-
-
-
-    allwords = ['art','damn','gay','hell','maid','muslim']
 
     import matplotlib.pyplot as plt
     import pickle
 
     plt.clf()
     traj = []
+    target_word_cetroid = Z[isword].sum(axis=0)/Z.shape[0]
+    closer_words = {}
     for k in range(len(list_of_words)):
-        
+        k_word = list_of_words[k][0] # e.g.: guayaquil
+        period = list_of_words[k][1] # e.g.: 0 if first week, 1 if second week, etc.
         if isword[k] :
             marker = 'ro'
             traj.append(Z[k,:])
-        else: marker = 'b.'
-        
-        
-        plt.plot(Z[k,0], Z[k,1],marker)
-        plt.text(Z[k,0], Z[k,1],list_of_words[k])
+            plt.plot(Z[k,0], Z[k,1], marker)
+
+            # plot only a few labels for clarity
+            if period % word_step == 0 or period == times[-1]:
+                plt.text(Z[k, 0], Z[k, 1], f'{k_word}::{period}', fontsize=font_size)
+        else:
+            # (distance, index, period) distance default: max numpy float
+            default_value = (np.finfo(float).max, k, period)
+            current_value = closer_words.get(k_word, default_value)
+            new_distance = np.linalg.norm(target_word_cetroid - Z[k,:])
+            if new_distance < current_value[0]:
+                closer_words[k_word] = (new_distance, k, period)
+    
+    for closer in closer_words.items():
+        k = closer[1][1]
+        k_word = closer[0]
+        period = closer[1][2]
+        plt.plot(Z[k,0], Z[k,1], 'bs')
+        plt.text(Z[k,0], Z[k,1], f'{k_word}::{period}', fontsize=font_size)
 
     traj = np.vstack(traj)
-    plt.plot(traj[:,0],traj[:,1])
+    plt.plot(traj[:,0], traj[:,1])
     plt.show()
 
     sio.savemat('{}/{}_tsne.mat'.format(tsne_output, word), {'emb':Z})

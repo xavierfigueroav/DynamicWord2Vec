@@ -16,7 +16,7 @@ def get_last_iter_file(files):
             last_iter_file = file_path
     return last_iter_file
 
-def run_trajectories(exper_dir, word):
+def run_trajectories(exper_dir, word, word_step, font_size):
     result_dir = os.path.join(exper_dir, 'results')
     output_file = os.path.join(result_dir, 'embs_for_viz.mat')
 
@@ -26,8 +26,8 @@ def run_trajectories(exper_dir, word):
         result_file = get_last_iter_file(result_files)
         transform(result_file, output_file)
 
-    plot_trajectories(exper_dir, output_file, word)
+    plot_trajectories(exper_dir, output_file, word, word_step, font_size)
 
 
 if __name__ == '__main__':
-    run_trajectories(sys.argv[1], sys.argv[2])
+    run_trajectories(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
