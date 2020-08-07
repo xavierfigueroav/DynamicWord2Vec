@@ -64,8 +64,8 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
 
     print(X.shape)
 
-    from sklearn.manifold import TSNE
-    model = TSNE(n_components=2, metric='euclidean', random_state=1)
+    import umap
+    model = umap.UMAP(n_neighbors=10, min_dist=0.75, metric='cosine', random_state=1)
     Z = model.fit_transform(X)
 
     import matplotlib.pyplot as plt
@@ -73,8 +73,6 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
 
     plt.clf()
     traj = []
-    target_word_cetroid = Z[isword].sum(axis=0)/Z.shape[0]
-    closer_words = {}
     for k in range(len(list_of_words)):
         k_word = list_of_words[k][0] # e.g.: guayaquil
         period = list_of_words[k][1] # e.g.: 0 if first week, 1 if second week, etc.
@@ -86,20 +84,29 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
             # plot only a few labels for clarity
             if period % word_step == 0 or period == times[-1]:
                 plt.text(Z[k, 0], Z[k, 1], f'{k_word}::{period}', fontsize=font_size)
-        else:
-            # (distance, index, period) distance default: max numpy float
-            default_value = (np.finfo(float).max, k, period)
-            current_value = closer_words.get(k_word, default_value)
-            new_distance = np.linalg.norm(target_word_cetroid - Z[k,:])
-            if new_distance < current_value[0]:
-                closer_words[k_word] = (new_distance, k, period)
     
-    for closer in closer_words.items():
-        k = closer[1][1]
-        k_word = closer[0]
-        period = closer[1][2]
-        plt.plot(Z[k,0], Z[k,1], 'bs')
-        plt.text(Z[k,0], Z[k,1], f'{k_word}::{period}', fontsize=font_size)
+    target_indexes = list(np.argwhere(isword).flat)
+    not_target_indexes = list(np.argwhere(~np.array(isword)).flat)
+
+    plot_indexes = set()
+    distances = []
+    for i in target_indexes:
+        differences = Z[not_target_indexes] - Z[i]
+        distances.extend(np.linalg.norm(differences, axis=1))
+    dist_threshold = np.quantile(distances, 0.95)
+
+    for i in target_indexes:
+        differences = Z[not_target_indexes] - Z[i]
+        distances = np.linalg.norm(differences, axis=1)
+        closest = sorted(zip(distances, not_target_indexes))
+        top_threshold = 10
+        for distance, word_index in closest[:top_threshold]:
+            if distance < dist_threshold and not word_index in plot_indexes:
+                k_word = list_of_words[word_index][0] # e.g.: guayaquil
+                period = list_of_words[word_index][1] # e.g.: 0 if first week, 1 if second week, etc.
+                plt.plot(Z[word_index,0], Z[word_index,1], 'bs')
+                plt.text(Z[word_index,0], Z[word_index,1], f'{k_word}::{period}', fontsize=font_size)
+                plot_indexes.add(word_index)
 
     traj = np.vstack(traj)
     plt.plot(traj[:,0], traj[:,1])
