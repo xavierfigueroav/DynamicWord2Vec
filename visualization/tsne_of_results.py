@@ -3,12 +3,10 @@
 Created on Mon Jan 09  2017
 """
 import glob
-import json
 import os
-from pprint import pprint
 
 import numpy as np
-from scipy.spatial.distance import pdist
+import pandas as pd
 import scipy.io as sio
 
 
@@ -18,7 +16,7 @@ def get_points(directory_path):
     frames = list(map(get_frame_number, files_path))
     return sorted(frames)
 
-def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
+def plot_trajectories(exper_dir, events, embeddings, word, word_step, font_size):
     embs_dir = os.path.join(exper_dir, 'embs')
     tsne_output = os.path.join(exper_dir, 'visualization')
     vocabulary = os.path.join(embs_dir, 'wordIDHash.csv')
@@ -43,6 +41,7 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
     X = []
     list_of_words = []
     isword = []
+    words_by_period = {}
     for year in times:
         emb = emb_all[f'U_{year}']
         embnrm = np.reshape(np.sqrt(np.sum(emb**2,1)),(emb.shape[0],1))
@@ -56,12 +55,12 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
         newwords = [(wordlist[k], year) for k in list(idx[:nn])]
         print(newwords)
         list_of_words.extend(newwords)
+        words_by_period[year] = list(map(lambda word: word[0], newwords))
         for k in range(nn):
             isword.append(k==0)
         X.append(emb[idx[:nn],:])
         
     X = np.vstack(X)
-
     print(X.shape)
 
     import umap
@@ -73,59 +72,90 @@ def plot_trajectories(exper_dir, embeddings, word, word_step, font_size):
 
     plt.clf()
     traj = []
+    target_indexes = []
+    not_target_indexes = []
+    sum_of_coor = dict()
     for k in range(len(list_of_words)):
         k_word = list_of_words[k][0] # e.g.: guayaquil
         period = list_of_words[k][1] # e.g.: 0 if first week, 1 if second week, etc.
         if isword[k] :
-            marker = 'ro'
+            target_indexes.append(k)
+            marker = 's'
+            color = 'red' if period in events else 'dodgerblue'
             traj.append(Z[k,:])
-            plt.plot(Z[k,0], Z[k,1], marker)
+            plt.plot(Z[k,0], Z[k,1], marker, color=color, markersize=7)
 
             # plot only a few labels for clarity
             if period % word_step == 0 or period == times[-1]:
                 plt.text(Z[k, 0], Z[k, 1], f'{k_word}::{period}', fontsize=font_size)
-    
-    target_indexes = list(np.argwhere(isword).flat)
-    not_target_indexes = list(np.argwhere(~np.array(isword)).flat)
+            else:
+                plt.text(Z[k, 0], Z[k, 1], f'{period}', fontsize=font_size)
+        else:
+            not_target_indexes.append(k)
+            sum_of_coor[k_word] = sum_of_coor.get(k_word, np.zeros(2))
+            sum_of_coor[k_word] += Z[k]
 
-    plot_indexes = set()
     distances = []
     for i in target_indexes:
         differences = Z[not_target_indexes] - Z[i]
         distances.extend(np.linalg.norm(differences, axis=1))
     dist_threshold = np.quantile(distances, 0.95)
+    print('==', dist_threshold)
 
+    def plot_word(word_index, k_word, list_of_words):
+        period = list_of_words[word_index][1] # e.g.: 0 if first week, 1 if second week, etc.
+        plt.plot(Z[word_index, 0], Z[word_index, 1], 'o', color='mediumseagreen')
+        plt.text(Z[word_index, 0], Z[word_index, 1], f'{k_word}::{period}', fontsize=font_size)
+                        
+    plot_indexes = set()
+    plot_words = dict()
     for i in target_indexes:
         differences = Z[not_target_indexes] - Z[i]
         distances = np.linalg.norm(differences, axis=1)
         closest = sorted(zip(distances, not_target_indexes))
-        top_threshold = 10
+        top_threshold = 20
         for distance, word_index in closest[:top_threshold]:
             if distance < dist_threshold and not word_index in plot_indexes:
                 k_word = list_of_words[word_index][0] # e.g.: guayaquil
-                period = list_of_words[word_index][1] # e.g.: 0 if first week, 1 if second week, etc.
-                plt.plot(Z[word_index,0], Z[word_index,1], 'bs')
-                plt.text(Z[word_index,0], Z[word_index,1], f'{k_word}::{period}', fontsize=font_size)
-                plot_indexes.add(word_index)
+                if plot_words.get(k_word) is None:
+                    plot_word(word_index, k_word, list_of_words)
+                    plot_indexes.add(word_index)
+                    plot_words[k_word] = np.array([Z[word_index]])
+                else:
+                    differences = plot_words[k_word] - Z[word_index]
+                    distances = np.linalg.norm(differences, axis=1)
+                    if distances[distances < 1].shape[0] == 0:
+                        plot_word(word_index, k_word, list_of_words)
+                        plot_indexes.add(word_index)
+                        plot_words[k_word] = np.append(plot_words[k_word], [Z[word_index]], axis=0)
 
     traj = np.vstack(traj)
-    plt.plot(traj[:,0], traj[:,1])
+    plt.plot(traj[:,0], traj[:,1], linewidth=2)
     plt.show()
 
-    sio.savemat('{}/{}_tsne.mat'.format(tsne_output, word), {'emb':Z})
+    target_word_dir = os.path.join(tsne_output, word)
+    if not os.path.isdir(target_word_dir):
+        os.makedirs(target_word_dir)
+    sio.savemat(os.path.join(target_word_dir, 'embs.mat'), {'emb':Z})
     pickle.dump(
         {'words':list_of_words,'isword':isword}, 
-        open('{}/{}_tsne_wordlist.pkl'.format(tsne_output, word),'wb')
+        open(os.path.join(target_word_dir, 'wordlist.pkl'),'wb')
     )
+    for period, context_words in words_by_period.items():
+        lines = []
+        for context_word in context_words:
+            lines.append(f'{word2Id[context_word]},{context_word}\n')
+        with open(os.path.join(target_word_dir, f'closer2{word}_week_{period}.csv'), 'w') as file:
+            file.writelines(lines)
 
 
     allwords = ['art','damn','gay','hell','maid','muslim']
 
     import matplotlib.pyplot as plt
     import pickle
-    Z = sio.loadmat('{}/{}_tsne.mat'.format(tsne_output, word))['emb']
+    Z = sio.loadmat(os.path.join(target_word_dir, 'embs.mat'))['emb']
     data = pickle.load(
-        open('{}/{}_tsne_wordlist.pkl'.format(tsne_output, word),'rb')
+        open(os.path.join(target_word_dir, 'wordlist.pkl'),'rb')
     )
     list_of_words, isword = data['words'],data['isword']
     plt.clf()
