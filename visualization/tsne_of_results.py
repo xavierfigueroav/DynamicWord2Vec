@@ -7,6 +7,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import scipy
 import scipy.io as sio
 
 
@@ -59,18 +60,18 @@ def plot_trajectories(exper_dir, events, embeddings, word, word_step, font_size)
         for k in range(nn):
             isword.append(k==0)
         X.append(emb[idx[:nn],:])
-        
+
     X = np.vstack(X)
     print(X.shape)
+
+    import matplotlib.pyplot as plt
+    import pickle
 
     import umap
     model = umap.UMAP(n_neighbors=10, min_dist=0.75, metric='cosine', random_state=1)
     Z = model.fit_transform(X)
 
-    import matplotlib.pyplot as plt
-    import pickle
-
-    plt.clf()
+    traj_fig, traj_ax = plt.subplots(1, 1)
     traj = []
     target_indexes = []
     not_target_indexes = []
@@ -83,13 +84,13 @@ def plot_trajectories(exper_dir, events, embeddings, word, word_step, font_size)
             marker = 's'
             color = 'red' if period in events else 'dodgerblue'
             traj.append(Z[k,:])
-            plt.plot(Z[k,0], Z[k,1], marker, color=color, markersize=7)
+            traj_ax.plot(Z[k,0], Z[k,1], marker, color=color, markersize=7)
 
             # plot only a few labels for clarity
             if period % word_step == 0 or period == times[-1]:
-                plt.text(Z[k, 0], Z[k, 1], f'{k_word}::{period}', fontsize=font_size)
+                traj_ax.text(Z[k, 0], Z[k, 1], f'{k_word}::{period}', fontsize=font_size)
             else:
-                plt.text(Z[k, 0], Z[k, 1], f'{period}', fontsize=font_size)
+                traj_ax.text(Z[k, 0], Z[k, 1], f'{period}', fontsize=font_size)
         else:
             not_target_indexes.append(k)
             sum_of_coor[k_word] = sum_of_coor.get(k_word, np.zeros(2))
@@ -104,8 +105,8 @@ def plot_trajectories(exper_dir, events, embeddings, word, word_step, font_size)
 
     def plot_word(word_index, k_word, list_of_words):
         period = list_of_words[word_index][1] # e.g.: 0 if first week, 1 if second week, etc.
-        plt.plot(Z[word_index, 0], Z[word_index, 1], 'o', color='mediumseagreen')
-        plt.text(Z[word_index, 0], Z[word_index, 1], f'{k_word}::{period}', fontsize=font_size)
+        traj_ax.plot(Z[word_index, 0], Z[word_index, 1], 'o', color='mediumseagreen')
+        traj_ax.text(Z[word_index, 0], Z[word_index, 1], f'{k_word}::{period}', fontsize=font_size)
                         
     plot_indexes = set()
     plot_words = dict()
@@ -130,8 +131,35 @@ def plot_trajectories(exper_dir, events, embeddings, word, word_step, font_size)
                         plot_words[k_word] = np.append(plot_words[k_word], [Z[word_index]], axis=0)
 
     traj = np.vstack(traj)
-    plt.plot(traj[:,0], traj[:,1], linewidth=2)
+    traj_ax.plot(traj[:,0], traj[:,1], linewidth=2)
     plt.show()
+
+    def get_semantic_change(vectors, metric):
+        distances = []
+        for i in range(1, vectors.shape[0]):
+            if metric == 'euclidean':
+                distance = np.linalg.norm(vectors[i] - vectors[i - 1])
+            elif metric == 'cosine':
+                distance = scipy.spatial.distance.cosine(vectors[i], vectors[i - 1])
+            distances.append(distance)
+        return distances
+
+    def plot_semantic_change(data):
+        fig, ax = plt.subplots(1, 1, figsize=(15, 5))
+        ax.plot(data)
+        # ax.plot(acum_distances)
+        ax.set_ylabel('Distancia')
+        ax.set_xlabel('Semana')
+        ax.legend(['Distancia entre semanas', 'Distancia entre semanas acumulada'])
+        plt.show()
+    
+    change_2d = get_semantic_change(traj, 'euclidean')
+    change_50d = get_semantic_change(X[target_indexes], 'euclidean')
+    change_50d_cosine = get_semantic_change(X[target_indexes], 'cosine')
+
+    plot_semantic_change(change_2d)
+    plot_semantic_change(change_50d)
+    plot_semantic_change(change_50d_cosine)
 
     target_word_dir = os.path.join(tsne_output, word)
     if not os.path.isdir(target_word_dir):
@@ -147,7 +175,6 @@ def plot_trajectories(exper_dir, events, embeddings, word, word_step, font_size)
             lines.append(f'{word2Id[context_word]},{context_word}\n')
         with open(os.path.join(target_word_dir, f'closer2{word}_week_{period}.csv'), 'w') as file:
             file.writelines(lines)
-
 
     allwords = ['art','damn','gay','hell','maid','muslim']
 
